@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "agent.h"
+#include "sys_metrics.h"
 
 static void print_usage(const char *prog_name) {
     printf("Usage: %s [OPTIONS]\n", prog_name);
@@ -46,7 +47,18 @@ int main(int argc, char *argv[]) {
     }
 
     if (config.json_output) {
-        printf("{\"status\": \"ok\", \"agent\": \"%s\", \"version\": \"%s\"}\n", AGENT_NAME, AGENT_VERSION);
+        sys_cpu_metrics_t cpu;
+        sys_mem_metrics_t mem;
+        sys_metrics_init();
+        sys_get_cpu_metrics(&cpu);
+        sys_get_mem_metrics(&mem);
+
+        printf("{\"status\": \"ok\", \"agent\": \"%s\", \"version\": \"%s\", "
+               "\"cpu\": {\"cores\": %d, \"usage_pct\": %.2f}, "
+               "\"memory\": {\"total_bytes\": %llu, \"used_bytes\": %llu, \"usage_pct\": %.2f}}\n", 
+               AGENT_NAME, AGENT_VERSION, 
+               cpu.core_count, cpu.overall_usage_pct,
+               (unsigned long long)mem.total_bytes, (unsigned long long)mem.used_bytes, mem.ram_usage_pct);
     } else {
         printf("%s v%s initialized.\n", AGENT_NAME, AGENT_VERSION);
     }
