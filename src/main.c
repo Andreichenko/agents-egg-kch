@@ -90,6 +90,8 @@ int main(int argc, char *argv[]) {
                 ui_draw_disks_view(&disk, 2, 2);
             } else if (active_tab == UI_TAB_PROCESSES) {
                 ui_draw_processes_view(&proc, 2, 2);
+            } else if (active_tab == UI_TAB_MANUAL) {
+                ui_draw_manual_view(0, "Ready for manual commands", 2, 2);
             } else {
                 ui_draw_system_summary(&cpu, &mem, 2, 2);
             }

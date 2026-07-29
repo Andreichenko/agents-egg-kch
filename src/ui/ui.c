@@ -166,6 +166,24 @@ void ui_draw_processes_view(const sys_proc_metrics_t *proc, int start_y, int sta
     }
 }
 
+void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, int start_x) {
+    (void)selected_idx;
+    attron(A_BOLD | COLOR_PAIR(COLOR_PAIR_HEADER));
+    mvprintw(start_y, start_x, " --- Manual Agent Control Panel --- ");
+    attroff(A_BOLD | COLOR_PAIR(COLOR_PAIR_HEADER));
+
+    mvprintw(start_y + 2, start_x, "Available Actions:");
+    mvprintw(start_y + 3, start_x + 2, "[k] Send SIGTERM / SIGKILL to target process");
+    mvprintw(start_y + 4, start_x + 2, "[s] Sort processes by CPU / Memory / PID");
+    mvprintw(start_y + 5, start_x + 2, "[r] Refresh system metrics immediately");
+
+    if (status_msg && status_msg[0] != '\0') {
+        attron(COLOR_PAIR(COLOR_PAIR_WARN) | A_BOLD);
+        mvprintw(start_y + 7, start_x, "Status: %s", status_msg);
+        attroff(COLOR_PAIR(COLOR_PAIR_WARN) | A_BOLD);
+    }
+}
+
 bool ui_handle_input(ui_tab_t *active_tab) {
     int ch = getch();
     if (ch == 'q' || ch == 'Q') {

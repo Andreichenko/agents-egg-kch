@@ -74,6 +74,15 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
 void ui_draw_processes_view(const sys_proc_metrics_t *proc, int start_y, int start_x);
 
 /**
+ * @brief Draw manual task/process control panel.
+ * @param selected_idx Index of highlighted process/task.
+ * @param status_msg Optional status message or prompt.
+ * @param start_y Vertical start position.
+ * @param start_x Horizontal start position.
+ */
+void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, int start_x);
+
+/**
  * @brief Main TUI event loop step.
  * @param active_tab Pointer to currently active tab variable.
  * @return false if exit command (e.g. 'q') was issued, true otherwise.
