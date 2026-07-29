@@ -1,0 +1,45 @@
+name: Release Artifacts
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    name: Build Release Binary (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses5-dev libncursesw5-dev build-essential
+
+      - name: Build binary
+        run: make
+
+      - name: Package artifact (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          tar -czvf agent-egg-kch-linux-amd64.tar.gz -C bin agent
+
+      - name: Package artifact (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          tar -czvf agent-egg-kch-macos-amd64.tar.gz -C bin agent
+
+      - name: Upload Release Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            agent-egg-kch-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
