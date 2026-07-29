@@ -13,6 +13,10 @@ TEST_DIR = tests
 TARGET = $(BIN_DIR)/agent
 TEST_TARGET = $(BIN_DIR)/test_suite
 
+# Installation settings
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+
 # OS Detection
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -32,7 +36,7 @@ OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
 SYS_OBJ = $(BUILD_DIR)/sys/$(notdir $(SYS_SRC:.c=.o))
 UI_OBJ = $(BUILD_DIR)/ui/ui.o
 
-.PHONY: all clean test
+.PHONY: all clean test install uninstall
 
 all: $(TARGET)
 
@@ -55,6 +59,13 @@ $(BIN_DIR)/test_metrics: $(TEST_DIR)/test_metrics.c $(SYS_OBJ) | $(BIN_DIR)
 
 $(BIN_DIR)/test_ui: $(TEST_DIR)/test_ui.c $(UI_OBJ) $(SYS_OBJ) | $(BIN_DIR)
 	$(CC) $(CFLAGS) $(TEST_DIR)/test_ui.c $(UI_OBJ) $(SYS_OBJ) $(NCURSES_FLAGS) -o $@
+
+install: $(TARGET)
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 $(TARGET) $(DESTDIR)$(BINDIR)/agent-egg-kch
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/agent-egg-kch
 
 clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR)

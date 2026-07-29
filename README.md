@@ -31,3 +31,21 @@ make
 ```bash
 make test
 ```
+
+## Installation & Artifact Pipeline
+To install the binary globally to `/usr/local/bin`:
+```bash
+sudo make install
+```
+
+To uninstall:
+```bash
+sudo make uninstall
+```
+
+### CI/CD Pipeline
+The repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`) that automatically:
+1. Builds the project on both **Ubuntu Linux** and **macOS**.
+2. Executes all HAL and TUI test suites (`make test`).
+3. Verifies CLI flag outputs (`./bin/agent --json`).
+4. Validates global system installation (`make install`).

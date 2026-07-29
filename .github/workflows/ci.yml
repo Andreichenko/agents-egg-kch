@@ -1,0 +1,37 @@
+name: Build and Test Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses5-dev libncursesw5-dev build-essential
+
+      - name: Build project
+        run: make
+
+      - name: Run unit test suite
+        run: make test
+
+      - name: Test JSON output CLI flag
+        run: ./bin/agent --json
+
+      - name: Verify installation pipeline
+        run: sudo make install PREFIX=/usr/local
