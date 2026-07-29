@@ -68,10 +68,11 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
 /**
  * @brief Draw process manager table view.
  * @param proc Pointer to Process metrics structure.
+ * @param selected_idx Currently highlighted process row index.
  * @param start_y Vertical start position.
  * @param start_x Horizontal start position.
  */
-void ui_draw_processes_view(const sys_proc_metrics_t *proc, int start_y, int start_x);
+void ui_draw_processes_view(const sys_proc_metrics_t *proc, int selected_idx, int start_y, int start_x);
 
 /**
  * @brief Draw manual task/process control panel.
@@ -85,8 +86,10 @@ void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, 
 /**
  * @brief Main TUI event loop step.
  * @param active_tab Pointer to currently active tab variable.
+ * @param selected_proc_idx Pointer to currently selected process index variable.
+ * @param max_proc_count Total number of processes available for navigation.
  * @return false if exit command (e.g. 'q') was issued, true otherwise.
  */
-bool ui_handle_input(ui_tab_t *active_tab);
+bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, int max_proc_count);
 
 #endif /* UI_H */

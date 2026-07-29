@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
 
         sys_metrics_init();
         ui_tab_t active_tab = UI_TAB_OVERVIEW;
+        int selected_proc_idx = 0;
         sys_cpu_metrics_t cpu;
         sys_mem_metrics_t mem;
         sys_disk_metrics_t disk;
@@ -89,17 +90,19 @@ int main(int argc, char *argv[]) {
             if (active_tab == UI_TAB_DISKS) {
                 ui_draw_disks_view(&disk, 2, 2);
             } else if (active_tab == UI_TAB_PROCESSES) {
-                ui_draw_processes_view(&proc, 2, 2);
+                ui_draw_processes_view(&proc, selected_proc_idx, 2, 2);
+                mvprintw(getmaxy(stdscr) - 1, 2, "Use UP/DOWN or j/k to navigate. Press 'q' to exit.");
             } else if (active_tab == UI_TAB_MANUAL) {
                 ui_draw_manual_view(0, "Ready for manual commands", 2, 2);
+                mvprintw(getmaxy(stdscr) - 1, 2, "Press 'q' or 'Q' to exit.");
             } else {
                 ui_draw_system_summary(&cpu, &mem, 2, 2);
+                mvprintw(getmaxy(stdscr) - 1, 2, "Press 'q' or 'Q' to exit. Press F1-F4 or 1-4 to switch tabs.");
             }
 
-            mvprintw(getmaxy(stdscr) - 1, 2, "Press 'q' or 'Q' to exit. Press F1-F4 or 1-4 to switch tabs.");
             refresh();
 
-            if (!ui_handle_input(&active_tab)) {
+            if (!ui_handle_input(&active_tab, &selected_proc_idx, (int)proc.count)) {
                 break;
             }
 
