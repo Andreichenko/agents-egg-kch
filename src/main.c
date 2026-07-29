@@ -75,17 +75,21 @@ int main(int argc, char *argv[]) {
         sys_cpu_metrics_t cpu;
         sys_mem_metrics_t mem;
         sys_disk_metrics_t disk;
+        sys_proc_metrics_t proc;
 
         while (true) {
             sys_get_cpu_metrics(&cpu);
             sys_get_mem_metrics(&mem);
             sys_get_disk_metrics(&disk);
+            sys_get_proc_metrics(&proc);
 
             erase();
             ui_draw_header(active_tab);
 
             if (active_tab == UI_TAB_DISKS) {
                 ui_draw_disks_view(&disk, 2, 2);
+            } else if (active_tab == UI_TAB_PROCESSES) {
+                ui_draw_processes_view(&proc, 2, 2);
             } else {
                 ui_draw_system_summary(&cpu, &mem, 2, 2);
             }

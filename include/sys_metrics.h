@@ -11,9 +11,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 #define MAX_CPU_CORES 128
 #define MAX_DISKS     32
+#define MAX_PROCESSES 1024
 
 /**
  * @brief CPU usage metrics.
@@ -59,6 +61,27 @@ typedef struct {
 } sys_disk_metrics_t;
 
 /**
+ * @brief Process information entry.
+ */
+typedef struct {
+    pid_t pid;
+    char name[64];
+    char user[32];
+    float cpu_pct;
+    float mem_pct;
+    uint64_t rss_bytes;
+    char state; /* 'R' (running), 'S' (sleeping), etc. */
+} sys_proc_info_t;
+
+/**
+ * @brief Aggregate process metrics list.
+ */
+typedef struct {
+    size_t count;
+    sys_proc_info_t procs[MAX_PROCESSES];
+} sys_proc_metrics_t;
+
+/**
  * @brief Initialize the system metrics collector HAL.
  * @return 0 on success, non-zero on failure.
  */
@@ -84,5 +107,12 @@ int sys_get_mem_metrics(sys_mem_metrics_t *metrics);
  * @return 0 on success, non-zero on failure.
  */
 int sys_get_disk_metrics(sys_disk_metrics_t *metrics);
+
+/**
+ * @brief Collect current running processes list.
+ * @param metrics Pointer to output structure.
+ * @return 0 on success, non-zero on failure.
+ */
+int sys_get_proc_metrics(sys_proc_metrics_t *metrics);
 
 #endif /* SYS_METRICS_H */

@@ -33,3 +33,10 @@ int sys_get_disk_metrics(sys_disk_metrics_t *metrics) {
     /* TODO: Parse statvfs and /proc/diskstats */
     return 0;
 }
+
+int sys_get_proc_metrics(sys_proc_metrics_t *metrics) {
+    if (!metrics) return -1;
+    memset(metrics, 0, sizeof(sys_proc_metrics_t));
+    /* TODO: Parse /proc/[pid]/stat */
+    return 0;
+}

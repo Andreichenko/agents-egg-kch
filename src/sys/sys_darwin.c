@@ -142,3 +142,48 @@ int sys_get_disk_metrics(sys_disk_metrics_t *metrics) {
     metrics->count = disk_idx;
     return 0;
 }
+
+int sys_get_proc_metrics(sys_proc_metrics_t *metrics) {
+    if (!metrics) return -1;
+    memset(metrics, 0, sizeof(sys_proc_metrics_t));
+
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+    size_t len = 0;
+    if (sysctl(mib, 4, NULL, &len, NULL, 0) < 0) {
+        return -1;
+    }
+
+    struct kinfo_proc *procs = malloc(len);
+    if (!procs) return -1;
+
+    if (sysctl(mib, 4, procs, &len, NULL, 0) < 0) {
+        free(procs);
+        return -1;
+    }
+
+    size_t count = len / sizeof(struct kinfo_proc);
+    size_t idx = 0;
+
+    for (size_t i = 0; i < count && idx < MAX_PROCESSES; i++) {
+        sys_proc_info_t *p = &metrics->procs[idx++];
+        p->pid = procs[i].kp_proc.p_pid;
+        strncpy(p->name, procs[i].kp_proc.p_comm, sizeof(p->name) - 1);
+
+        switch (procs[i].kp_proc.p_stat) {
+            case SRUN:  p->state = 'R'; break;
+            case SSLEEP: p->state = 'S'; break;
+            case SSTOP:  p->state = 'T'; break;
+            case SZOMB:  p->state = 'Z'; break;
+            default:     p->state = 'I'; break;
+        }
+
+        /* Basic defaults, detailed CPU/RAM % calculated in subsequent steps */
+        p->cpu_pct = 0.0f;
+        p->mem_pct = 0.0f;
+        p->rss_bytes = 0;
+    }
+
+    free(procs);
+    metrics->count = idx;
+    return 0;
+}

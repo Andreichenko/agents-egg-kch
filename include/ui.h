@@ -66,6 +66,14 @@ void ui_draw_system_summary(const sys_cpu_metrics_t *cpu, const sys_mem_metrics_
 void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x);
 
 /**
+ * @brief Draw process manager table view.
+ * @param proc Pointer to Process metrics structure.
+ * @param start_y Vertical start position.
+ * @param start_x Horizontal start position.
+ */
+void ui_draw_processes_view(const sys_proc_metrics_t *proc, int start_y, int start_x);
+
+/**
  * @brief Main TUI event loop step.
  * @param active_tab Pointer to currently active tab variable.
  * @return false if exit command (e.g. 'q') was issued, true otherwise.

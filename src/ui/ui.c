@@ -148,6 +148,24 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
     }
 }
 
+void ui_draw_processes_view(const sys_proc_metrics_t *proc, int start_y, int start_x) {
+    if (!proc || proc->count == 0) {
+        mvprintw(start_y, start_x, "No process metrics available.");
+        return;
+    }
+
+    attron(A_BOLD | A_UNDERLINE);
+    mvprintw(start_y, start_x, "%-8s %-30s %-6s", "PID", "Command", "State");
+    attroff(A_BOLD | A_UNDERLINE);
+
+    int cur_y = start_y + 1;
+    for (size_t i = 0; i < proc->count && cur_y < getmaxy(stdscr) - 2; i++) {
+        const sys_proc_info_t *p = &proc->procs[i];
+        mvprintw(cur_y, start_x, "%-8d %-30.30s %-6c", p->pid, p->name, p->state);
+        cur_y++;
+    }
+}
+
 bool ui_handle_input(ui_tab_t *active_tab) {
     int ch = getch();
     if (ch == 'q' || ch == 'Q') {

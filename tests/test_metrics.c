@@ -44,12 +44,24 @@ static void test_disk_metrics(void) {
            (unsigned long long)(disk.disks[0].total_bytes / 1024 / 1024 / 1024));
 }
 
+static void test_proc_metrics(void) {
+    sys_proc_metrics_t proc;
+    int res = sys_get_proc_metrics(&proc);
+    assert(res == 0);
+    assert(proc.count > 0);
+    assert(proc.procs[0].pid > 0);
+    assert(proc.procs[0].name[0] != '\0');
+    printf("[PASS] test_proc_metrics (detected %zu running processes, sample: %s [PID %d])\n",
+           proc.count, proc.procs[0].name, proc.procs[0].pid);
+}
+
 int main(void) {
     printf("Running System Metrics HAL unit tests...\n");
     assert(sys_metrics_init() == 0);
     test_cpu_metrics();
     test_mem_metrics();
     test_disk_metrics();
+    test_proc_metrics();
     printf("All System Metrics HAL unit tests passed successfully!\n");
     return 0;
 }
