@@ -25,11 +25,12 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 # Sources
-SRCS = $(SRC_DIR)/main.c $(SYS_SRC)
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/ui/ui.c $(SYS_SRC)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
 
 # Test sources
-TEST_OBJS = $(BUILD_DIR)/sys/$(notdir $(SYS_SRC:.c=.o))
+SYS_OBJ = $(BUILD_DIR)/sys/$(notdir $(SYS_SRC:.c=.o))
+UI_OBJ = $(BUILD_DIR)/ui/ui.o
 
 .PHONY: all clean test
 
@@ -45,11 +46,15 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@
 
-test: $(TEST_TARGET)
-	@./$(TEST_TARGET)
+test: $(BIN_DIR)/test_metrics $(BIN_DIR)/test_ui
+	@./$(BIN_DIR)/test_metrics
+	@./$(BIN_DIR)/test_ui
 
-$(TEST_TARGET): $(TEST_DIR)/test_metrics.c $(TEST_OBJS) | $(BIN_DIR)
-	$(CC) $(CFLAGS) $(TEST_DIR)/test_metrics.c $(TEST_OBJS) -o $@
+$(BIN_DIR)/test_metrics: $(TEST_DIR)/test_metrics.c $(SYS_OBJ) | $(BIN_DIR)
+	$(CC) $(CFLAGS) $(TEST_DIR)/test_metrics.c $(SYS_OBJ) -o $@
+
+$(BIN_DIR)/test_ui: $(TEST_DIR)/test_ui.c $(UI_OBJ) $(SYS_OBJ) | $(BIN_DIR)
+	$(CC) $(CFLAGS) $(TEST_DIR)/test_ui.c $(UI_OBJ) $(SYS_OBJ) $(NCURSES_FLAGS) -o $@
 
 clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR)

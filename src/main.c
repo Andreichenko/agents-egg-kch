@@ -6,8 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ncurses.h>
 #include "agent.h"
 #include "sys_metrics.h"
+#include "ui.h"
 
 static void print_usage(const char *prog_name) {
     printf("Usage: %s [OPTIONS]\n", prog_name);
@@ -59,6 +61,39 @@ int main(int argc, char *argv[]) {
                AGENT_NAME, AGENT_VERSION, 
                cpu.core_count, cpu.overall_usage_pct,
                (unsigned long long)mem.total_bytes, (unsigned long long)mem.used_bytes, mem.ram_usage_pct);
+        return EXIT_SUCCESS;
+    }
+
+    if (config.interactive) {
+        if (!ui_init()) {
+            fprintf(stderr, "Error: Failed to initialize terminal UI mode.\n");
+            return EXIT_FAILURE;
+        }
+
+        sys_metrics_init();
+        ui_tab_t active_tab = UI_TAB_OVERVIEW;
+        sys_cpu_metrics_t cpu;
+        sys_mem_metrics_t mem;
+
+        while (true) {
+            sys_get_cpu_metrics(&cpu);
+            sys_get_mem_metrics(&mem);
+
+            erase();
+            ui_draw_header(active_tab);
+            ui_draw_system_summary(&cpu, &mem, 2, 2);
+
+            mvprintw(6, 2, "Press 'q' or 'Q' to exit. Press F1-F4 or 1-4 to switch tabs.");
+            refresh();
+
+            if (!ui_handle_input(&active_tab)) {
+                break;
+            }
+
+            napms(100); /* 100ms refresh rate */
+        }
+
+        ui_shutdown();
     } else {
         printf("%s v%s initialized.\n", AGENT_NAME, AGENT_VERSION);
     }
