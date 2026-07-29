@@ -58,6 +58,14 @@ void ui_draw_header(ui_tab_t active_tab);
 void ui_draw_system_summary(const sys_cpu_metrics_t *cpu, const sys_mem_metrics_t *mem, int start_y, int start_x);
 
 /**
+ * @brief Draw detailed disks summary table view.
+ * @param disk Pointer to Disk metrics structure.
+ * @param start_y Vertical start position.
+ * @param start_x Horizontal start position.
+ */
+void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x);
+
+/**
  * @brief Main TUI event loop step.
  * @param active_tab Pointer to currently active tab variable.
  * @return false if exit command (e.g. 'q') was issued, true otherwise.

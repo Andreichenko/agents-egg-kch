@@ -74,16 +74,23 @@ int main(int argc, char *argv[]) {
         ui_tab_t active_tab = UI_TAB_OVERVIEW;
         sys_cpu_metrics_t cpu;
         sys_mem_metrics_t mem;
+        sys_disk_metrics_t disk;
 
         while (true) {
             sys_get_cpu_metrics(&cpu);
             sys_get_mem_metrics(&mem);
+            sys_get_disk_metrics(&disk);
 
             erase();
             ui_draw_header(active_tab);
-            ui_draw_system_summary(&cpu, &mem, 2, 2);
 
-            mvprintw(6, 2, "Press 'q' or 'Q' to exit. Press F1-F4 or 1-4 to switch tabs.");
+            if (active_tab == UI_TAB_DISKS) {
+                ui_draw_disks_view(&disk, 2, 2);
+            } else {
+                ui_draw_system_summary(&cpu, &mem, 2, 2);
+            }
+
+            mvprintw(getmaxy(stdscr) - 1, 2, "Press 'q' or 'Q' to exit. Press F1-F4 or 1-4 to switch tabs.");
             refresh();
 
             if (!ui_handle_input(&active_tab)) {

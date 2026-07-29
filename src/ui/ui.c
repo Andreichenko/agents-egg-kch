@@ -109,6 +109,45 @@ void ui_draw_system_summary(const sys_cpu_metrics_t *cpu, const sys_mem_metrics_
     draw_progress_bar(start_y + 1, start_x, bar_width, mem ? mem->ram_usage_pct : 0.0f, "RAM Usage");
 }
 
+void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x) {
+    if (!disk || disk->count == 0) {
+        mvprintw(start_y, start_x, "No disk metrics available.");
+        return;
+    }
+
+    attron(A_BOLD | A_UNDERLINE);
+    mvprintw(start_y, start_x, "%-20s %-25s %-10s %-10s %-10s %-8s",
+             "Mount Point", "Device", "Total", "Used", "Free", "Use %");
+    attroff(A_BOLD | A_UNDERLINE);
+
+    int cur_y = start_y + 1;
+    for (size_t i = 0; i < disk->count && cur_y < getmaxy(stdscr) - 2; i++) {
+        const sys_disk_info_t *d = &disk->disks[i];
+        float use_pct = d->total_bytes > 0 ? ((float)d->used_bytes / (float)d->total_bytes) * 100.0f : 0.0f;
+
+        char total_str[16], used_str[16], free_str[16];
+        snprintf(total_str, sizeof(total_str), "%.1f GB", (double)d->total_bytes / (1024.0 * 1024.0 * 1024.0));
+        snprintf(used_str, sizeof(used_str), "%.1f GB", (double)d->used_bytes / (1024.0 * 1024.0 * 1024.0));
+        snprintf(free_str, sizeof(free_str), "%.1f GB", (double)d->free_bytes / (1024.0 * 1024.0 * 1024.0));
+
+        short color = COLOR_PAIR_OK;
+        if (use_pct > 90.0f) {
+            color = COLOR_PAIR_CRIT;
+        } else if (use_pct > 75.0f) {
+            color = COLOR_PAIR_WARN;
+        }
+
+        mvprintw(cur_y, start_x, "%-20.20s %-25.25s %-10s %-10s %-10s ",
+                 d->mount_point, d->device, total_str, used_str, free_str);
+
+        attron(COLOR_PAIR(color) | A_BOLD);
+        printw("%6.1f%%", use_pct);
+        attroff(COLOR_PAIR(color) | A_BOLD);
+
+        cur_y++;
+    }
+}
+
 bool ui_handle_input(ui_tab_t *active_tab) {
     int ch = getch();
     if (ch == 'q' || ch == 'Q') {
