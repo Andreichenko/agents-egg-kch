@@ -137,6 +137,11 @@ int sys_get_disk_metrics(sys_disk_metrics_t *metrics) {
         d->total_bytes = (uint64_t)mntbuf[i].f_blocks * mntbuf[i].f_bsize;
         d->free_bytes = (uint64_t)mntbuf[i].f_bavail * mntbuf[i].f_bsize;
         d->used_bytes = d->total_bytes > d->free_bytes ? (d->total_bytes - d->free_bytes) : 0;
+        
+        /* Calculated metrics placeholders */
+        d->read_bytes_sec = 0;
+        d->write_bytes_sec = 0;
+        d->iops = 0;
     }
 
     metrics->count = disk_idx;

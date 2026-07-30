@@ -100,9 +100,36 @@ int sys_get_disk_metrics(sys_disk_metrics_t *metrics) {
             d->total_bytes = (uint64_t)vfs.f_blocks * vfs.f_frsize;
             d->free_bytes = (uint64_t)vfs.f_bavail * vfs.f_frsize;
             d->used_bytes = d->total_bytes > d->free_bytes ? (d->total_bytes - d->free_bytes) : 0;
+            d->read_bytes_sec = 0;
+            d->write_bytes_sec = 0;
+            d->iops = 0;
         }
     }
     fclose(fp);
+
+    /* Read /proc/diskstats for I/O stats */
+    FILE *ds_fp = fopen("/proc/diskstats", "r");
+    if (ds_fp) {
+        char line[256];
+        while (fgets(line, sizeof(line), ds_fp)) {
+            unsigned int major, minor;
+            char disk_name[64];
+            unsigned long reads_completed, sectors_read, writes_completed, sectors_written;
+
+            if (sscanf(line, "%u %u %63s %lu %*u %lu %*u %lu %*u %lu",
+                       &major, &minor, disk_name, &reads_completed, &sectors_read,
+                       &writes_completed, &sectors_written) >= 7) {
+                for (size_t i = 0; i < idx; i++) {
+                    if (strstr(metrics->disks[i].device, disk_name) != NULL) {
+                        metrics->disks[i].iops = (uint32_t)(reads_completed + writes_completed);
+                        metrics->disks[i].read_bytes_sec = (uint64_t)sectors_read * 512;
+                        metrics->disks[i].write_bytes_sec = (uint64_t)sectors_written * 512;
+                    }
+                }
+            }
+        }
+        fclose(ds_fp);
+    }
 
     metrics->count = idx;
     return 0;

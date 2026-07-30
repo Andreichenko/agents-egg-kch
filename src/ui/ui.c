@@ -117,8 +117,8 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
     }
 
     attron(A_BOLD | A_UNDERLINE);
-    mvprintw(start_y, start_x, "%-20s %-25s %-10s %-10s %-10s %-8s",
-             "Mount Point", "Device", "Total", "Used", "Free", "Use %");
+    mvprintw(start_y, start_x, "%-18s %-22s %-9s %-9s %-9s %-8s %-8s",
+             "Mount Point", "Device", "Total", "Used", "Free", "Use %", "IOPS");
     attroff(A_BOLD | A_UNDERLINE);
 
     int cur_y = start_y + 1;
@@ -138,13 +138,14 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
             color = COLOR_PAIR_WARN;
         }
 
-        mvprintw(cur_y, start_x, "%-20.20s %-25.25s %-10s %-10s %-10s ",
+        mvprintw(cur_y, start_x, "%-18.18s %-22.22s %-9s %-9s %-9s ",
                  d->mount_point, d->device, total_str, used_str, free_str);
 
         attron(COLOR_PAIR(color) | A_BOLD);
         printw("%6.1f%%", use_pct);
         attroff(COLOR_PAIR(color) | A_BOLD);
 
+        printw(" %8u", d->iops);
         cur_y++;
     }
 }
