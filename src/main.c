@@ -15,13 +15,14 @@ static void print_usage(const char *prog_name) {
     printf("Usage: %s [OPTIONS]\n", prog_name);
     printf("High-performance CLI/TUI monitoring agent (%s v%s)\n\n", AGENT_NAME, AGENT_VERSION);
     printf("Options:\n");
-    printf("  -h, --help       Show this help message and exit\n");
-    printf("  -v, --version    Show version information and exit\n");
-    printf("  -j, --json       Output metrics in JSON format\n");
-    printf("  -1, --once       Run once, output metrics, and exit\n");
-    printf("  -c, --cpu        Show CPU metrics and exit\n");
-    printf("  -m, --mem        Show Memory metrics and exit\n");
-    printf("  -d, --disk       Show Disk metrics and exit\n");
+    printf("  -h, --help           Show this help message and exit\n");
+    printf("  -v, --version        Show version information and exit\n");
+    printf("  -j, --json           Output metrics in JSON format\n");
+    printf("  -1, --once           Run once, output metrics, and exit\n");
+    printf("  -c, --cpu            Show CPU metrics and exit\n");
+    printf("  -m, --mem            Show Memory metrics and exit\n");
+    printf("  -d, --disk           Show Disk metrics and exit\n");
+    printf("  -p, --ps[=NAME]      Show process list (optional filter by NAME) and exit\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -31,7 +32,9 @@ int main(int argc, char *argv[]) {
         .once = 0,
         .show_cpu = 0,
         .show_mem = 0,
-        .show_disk = 0
+        .show_disk = 0,
+        .show_ps = 0,
+        .filter_proc = ""
     };
 
     for (int i = 1; i < argc; i++) {
@@ -56,6 +59,15 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--disk") == 0) {
             config.show_disk = 1;
             config.interactive = 0;
+        } else if (strcmp(argv[i], "-p") == 0 || strncmp(argv[i], "--ps", 4) == 0) {
+            config.show_ps = 1;
+            config.interactive = 0;
+            if (strncmp(argv[i], "--ps=", 5) == 0) {
+                strncpy(config.filter_proc, argv[i] + 5, sizeof(config.filter_proc) - 1);
+            } else if (i + 1 < argc && argv[i + 1][0] != '-') {
+                strncpy(config.filter_proc, argv[i + 1], sizeof(config.filter_proc) - 1);
+                i++;
+            }
         } else {
             fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
             print_usage(argv[0]);
@@ -67,8 +79,15 @@ int main(int argc, char *argv[]) {
         sys_cpu_metrics_t cpu;
         sys_metrics_init();
         sys_get_cpu_metrics(&cpu);
-        printf("CPU Cores: %d\n", cpu.core_count);
-        printf("CPU Overall Usage: %.2f%%\n", cpu.overall_usage_pct);
+        printf("\033[1;36m=== CPU Metrics ===\033[0m\n");
+        printf("Cores: \033[1;33m%d\033[0m\n", cpu.core_count);
+        printf("Usage: \033[1;32m%5.1f%%\033[0m [", cpu.overall_usage_pct);
+        int filled = (int)((cpu.overall_usage_pct / 100.0f) * 30);
+        for (int i = 0; i < 30; i++) {
+            if (i < filled) printf("\033[32m█\033[0m");
+            else printf("\033[90m░\033[0m");
+        }
+        printf("]\n");
         return EXIT_SUCCESS;
     }
 
@@ -76,9 +95,45 @@ int main(int argc, char *argv[]) {
         sys_mem_metrics_t mem;
         sys_metrics_init();
         sys_get_mem_metrics(&mem);
-        printf("RAM Total: %.2f GB\n", (double)mem.total_bytes / (1024.0 * 1024.0 * 1024.0));
-        printf("RAM Used:  %.2f GB (%.2f%%)\n", (double)mem.used_bytes / (1024.0 * 1024.0 * 1024.0), mem.ram_usage_pct);
-        printf("RAM Free:  %.2f GB\n", (double)mem.free_bytes / (1024.0 * 1024.0 * 1024.0));
+        printf("\033[1;35m=== Memory Metrics ===\033[0m\n");
+        printf("Total: \033[1;37m%.2f GB\033[0m\n", (double)mem.total_bytes / (1024.0 * 1024.0 * 1024.0));
+        printf("Used:  \033[1;31m%.2f GB\033[0m (%.2f%%)\n", (double)mem.used_bytes / (1024.0 * 1024.0 * 1024.0), mem.ram_usage_pct);
+        printf("Free:  \033[1;32m%.2f GB\033[0m\n", (double)mem.free_bytes / (1024.0 * 1024.0 * 1024.0));
+        printf("RAM:   [");
+        int filled = (int)((mem.ram_usage_pct / 100.0f) * 30);
+        for (int i = 0; i < 30; i++) {
+            if (i < filled) printf("\033[35m█\033[0m");
+            else printf("\033[90m░\033[0m");
+        }
+        printf("]\n");
+        return EXIT_SUCCESS;
+    }
+
+    if (config.show_ps) {
+        sys_proc_metrics_t proc;
+        sys_metrics_init();
+        sys_get_proc_metrics(&proc);
+
+        printf("\033[1;36m%-8s %-30s %-8s\033[0m\n", "PID", "COMMAND", "STATE");
+        printf("\033[90m--------------------------------------------------\033[0m\n");
+
+        size_t matched = 0;
+        for (size_t i = 0; i < proc.count; i++) {
+            sys_proc_info_t *p = &proc.procs[i];
+            if (config.filter_proc[0] != '\0' && strcasestr(p->name, config.filter_proc) == NULL) {
+                continue;
+            }
+            matched++;
+            const char *state_color = "\033[32m"; /* Green running */
+            if (p->state == 'S') state_color = "\033[34m"; /* Blue sleeping */
+            if (p->state == 'T') state_color = "\033[33m"; /* Yellow stopped */
+            if (p->state == 'Z') state_color = "\033[31m"; /* Red zombie */
+
+            printf("\033[1;37m%-8d\033[0m %-30.30s %s%-8c\033[0m\n", p->pid, p->name, state_color, p->state);
+        }
+
+        printf("\033[90m--------------------------------------------------\033[0m\n");
+        printf("\033[1;33mTotal matched processes:\033[0m %zu / %zu\n", matched, proc.count);
         return EXIT_SUCCESS;
     }
 
