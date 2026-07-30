@@ -33,6 +33,15 @@ typedef enum {
 } ui_tab_t;
 
 /**
+ * @brief Process sorting modes for TUI view.
+ */
+typedef enum {
+    UI_SORT_PID = 0,
+    UI_SORT_NAME,
+    UI_SORT_STATE
+} ui_proc_sort_mode_t;
+
+/**
  * @brief Initialize ncurses terminal UI mode.
  * @return true on success, false if terminal lacks required capabilities.
  */
@@ -70,10 +79,11 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
  * @brief Draw process manager table view.
  * @param proc Pointer to Process metrics structure.
  * @param selected_idx Currently highlighted process row index.
+ * @param sort_mode Current sorting mode for processes.
  * @param start_y Vertical start position.
  * @param start_x Horizontal start position.
  */
-void ui_draw_processes_view(const sys_proc_metrics_t *proc, int selected_idx, int start_y, int start_x);
+void ui_draw_processes_view(const sys_proc_metrics_t *proc, int selected_idx, ui_proc_sort_mode_t sort_mode, int start_y, int start_x);
 
 /**
  * @brief Draw manual task/process control panel.
@@ -90,10 +100,11 @@ void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, 
  * @param selected_proc_idx Pointer to currently selected process index variable.
  * @param current_proc_pid PID of the currently highlighted process.
  * @param max_proc_count Total number of processes available for navigation.
+ * @param sort_mode Pointer to process sort mode variable.
  * @param status_buf Buffer to store status messages.
  * @param status_buf_size Size of the status buffer.
  * @return false if exit command (e.g. 'q') was issued, true otherwise.
  */
-bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current_proc_pid, int max_proc_count, char *status_buf, size_t status_buf_size);
+bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current_proc_pid, int max_proc_count, ui_proc_sort_mode_t *sort_mode, char *status_buf, size_t status_buf_size);
 
 #endif /* UI_H */

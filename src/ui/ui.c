@@ -150,19 +150,55 @@ void ui_draw_disks_view(const sys_disk_metrics_t *disk, int start_y, int start_x
     }
 }
 
-void ui_draw_processes_view(const sys_proc_metrics_t *proc, int selected_idx, int start_y, int start_x) {
+static int cmp_proc_pid(const void *a, const void *b) {
+    const sys_proc_info_t *p1 = (const sys_proc_info_t *)a;
+    const sys_proc_info_t *p2 = (const sys_proc_info_t *)b;
+    return (p1->pid - p2->pid);
+}
+
+static int cmp_proc_name(const void *a, const void *b) {
+    const sys_proc_info_t *p1 = (const sys_proc_info_t *)a;
+    const sys_proc_info_t *p2 = (const sys_proc_info_t *)b;
+    return strcasecmp(p1->name, p2->name);
+}
+
+static int cmp_proc_state(const void *a, const void *b) {
+    const sys_proc_info_t *p1 = (const sys_proc_info_t *)a;
+    const sys_proc_info_t *p2 = (const sys_proc_info_t *)b;
+    return (p1->state - p2->state);
+}
+
+void ui_draw_processes_view(const sys_proc_metrics_t *proc, int selected_idx, ui_proc_sort_mode_t sort_mode, int start_y, int start_x) {
     if (!proc || proc->count == 0) {
         mvprintw(start_y, start_x, "No process metrics available.");
         return;
     }
 
+    /* Make a temporary copy for sorting */
+    sys_proc_metrics_t sorted_proc = *proc;
+    if (sort_mode == UI_SORT_PID) {
+        qsort(sorted_proc.procs, sorted_proc.count, sizeof(sys_proc_info_t), cmp_proc_pid);
+    } else if (sort_mode == UI_SORT_NAME) {
+        qsort(sorted_proc.procs, sorted_proc.count, sizeof(sys_proc_info_t), cmp_proc_name);
+    } else if (sort_mode == UI_SORT_STATE) {
+        qsort(sorted_proc.procs, sorted_proc.count, sizeof(sys_proc_info_t), cmp_proc_state);
+    }
+
+    const char *sort_label = "PID";
+    if (sort_mode == UI_SORT_NAME) sort_label = "NAME";
+    if (sort_mode == UI_SORT_STATE) sort_label = "STATE";
+
+    attron(A_BOLD);
+    mvprintw(start_y, start_x, "Processes [Sort Mode: %s] (Press 's' to cycle sort)", sort_label);
+    attroff(A_BOLD);
+
     attron(A_BOLD | A_UNDERLINE);
-    mvprintw(start_y, start_x, "%-8s %-30s %-6s", "PID", "Command", "State");
+    mvprintw(start_y + 1, start_x, "%-8s %-30s %-6s", "PID", "Command", "State");
     attroff(A_BOLD | A_UNDERLINE);
 
-    int cur_y = start_y + 1;
-    for (size_t i = 0; i < proc->count && cur_y < getmaxy(stdscr) - 2; i++) {
-        const sys_proc_info_t *p = &proc->procs[i];
+    int cur_y = start_y + 2;
+    for (size_t i = 0; i < sorted_proc.count && cur_y < getmaxy(stdscr) - 2; i++) {
+        const sys_proc_info_t *p = &sorted_proc.procs[i];
         if ((int)i == selected_idx) {
             attron(A_REVERSE | A_BOLD);
             mvprintw(cur_y, start_x, "%-8d %-30.30s %-6c", p->pid, p->name, p->state);
@@ -181,8 +217,8 @@ void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, 
     attroff(A_BOLD | COLOR_PAIR(COLOR_PAIR_HEADER));
 
     mvprintw(start_y + 2, start_x, "Available Actions:");
-    mvprintw(start_y + 3, start_x + 2, "[k] Send SIGTERM / SIGKILL to target process");
-    mvprintw(start_y + 4, start_x + 2, "[s] Sort processes by CPU / Memory / PID");
+    mvprintw(start_y + 3, start_x + 2, "[x] Send SIGTERM / [X] SIGKILL to target process");
+    mvprintw(start_y + 4, start_x + 2, "[s] Cycle sort mode (PID -> NAME -> STATE)");
     mvprintw(start_y + 5, start_x + 2, "[r] Refresh system metrics immediately");
 
     if (status_msg && status_msg[0] != '\0') {
@@ -192,7 +228,7 @@ void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, 
     }
 }
 
-bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current_proc_pid, int max_proc_count, char *status_buf, size_t status_buf_size) {
+bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current_proc_pid, int max_proc_count, ui_proc_sort_mode_t *sort_mode, char *status_buf, size_t status_buf_size) {
     int ch = getch();
     if (ch == 'q' || ch == 'Q') {
         return false;
@@ -211,6 +247,14 @@ bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current
         } else if (ch == KEY_UP || ch == 'k') {
             if (*selected_proc_idx > 0) {
                 (*selected_proc_idx)--;
+            }
+        } else if (ch == 's' || ch == 'S') {
+            if (sort_mode) {
+                *sort_mode = (*sort_mode + 1) % 3;
+                if (status_buf && status_buf_size > 0) {
+                    const char *labels[] = {"PID", "NAME", "STATE"};
+                    snprintf(status_buf, status_buf_size, "Switched sort mode to %s.", labels[*sort_mode]);
+                }
             }
         } else if (ch == 'x' || ch == 'X' || ch == 'K') {
             /* Send signal to highlighted process */
