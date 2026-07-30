@@ -20,6 +20,7 @@ typedef struct {
     int show_mem;              /* Output Memory metrics in CLI mode */
     int show_disk;             /* Output Disk metrics in CLI mode */
     int show_ps;               /* Output process list in CLI mode */
+    int show_top;              /* Output top resource-consuming processes */
     char filter_proc[64];      /* Optional process filter string */
 } agent_config_t;
 

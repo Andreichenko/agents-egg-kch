@@ -23,6 +23,7 @@ static void print_usage(const char *prog_name) {
     printf("  -m, --mem            Show Memory metrics and exit\n");
     printf("  -d, --disk           Show Disk metrics and exit\n");
     printf("  -p, --ps[=NAME]      Show process list (optional filter by NAME) and exit\n");
+    printf("  -t, --top            Show top resource-consuming processes and exit\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -34,6 +35,7 @@ int main(int argc, char *argv[]) {
         .show_mem = 0,
         .show_disk = 0,
         .show_ps = 0,
+        .show_top = 0,
         .filter_proc = ""
     };
 
@@ -58,6 +60,9 @@ int main(int argc, char *argv[]) {
             config.interactive = 0;
         } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--disk") == 0) {
             config.show_disk = 1;
+            config.interactive = 0;
+        } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
+            config.show_top = 1;
             config.interactive = 0;
         } else if (strcmp(argv[i], "-p") == 0 || strncmp(argv[i], "--ps", 4) == 0) {
             config.show_ps = 1;
@@ -106,6 +111,29 @@ int main(int argc, char *argv[]) {
             else printf("\033[90m░\033[0m");
         }
         printf("]\n");
+        return EXIT_SUCCESS;
+    }
+
+    if (config.show_top) {
+        sys_proc_metrics_t proc;
+        sys_metrics_init();
+        sys_get_proc_metrics(&proc);
+
+        printf("\033[1;33m=== Top System Processes ===\033[0m\n");
+        printf("\033[1;36m%-8s %-30s %-8s\033[0m\n", "PID", "COMMAND", "STATE");
+        printf("\033[90m--------------------------------------------------\033[0m\n");
+
+        size_t limit = proc.count < 10 ? proc.count : 10;
+        for (size_t i = 0; i < limit; i++) {
+            sys_proc_info_t *p = &proc.procs[i];
+            const char *state_color = "\033[32m";
+            if (p->state == 'S') state_color = "\033[34m";
+            if (p->state == 'T') state_color = "\033[33m";
+            if (p->state == 'Z') state_color = "\033[31m";
+
+            printf("\033[1;37m%-8d\033[0m %-30.30s %s%-8c\033[0m\n", p->pid, p->name, state_color, p->state);
+        }
+        printf("\033[90m--------------------------------------------------\033[0m\n");
         return EXIT_SUCCESS;
     }
 
