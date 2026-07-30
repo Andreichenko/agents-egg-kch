@@ -16,6 +16,9 @@ typedef struct {
     int interactive; /* Run TUI mode if non-zero */
     int json_output; /* Output metrics as JSON */
     int once;        /* Output once and exit */
+    int show_cpu;    /* Output CPU metrics in CLI mode */
+    int show_mem;    /* Output Memory metrics in CLI mode */
+    int show_disk;   /* Output Disk metrics in CLI mode */
 } agent_config_t;
 
 #endif /* AGENT_H */

@@ -19,13 +19,19 @@ static void print_usage(const char *prog_name) {
     printf("  -v, --version    Show version information and exit\n");
     printf("  -j, --json       Output metrics in JSON format\n");
     printf("  -1, --once       Run once, output metrics, and exit\n");
+    printf("  -c, --cpu        Show CPU metrics and exit\n");
+    printf("  -m, --mem        Show Memory metrics and exit\n");
+    printf("  -d, --disk       Show Disk metrics and exit\n");
 }
 
 int main(int argc, char *argv[]) {
     agent_config_t config = {
         .interactive = 1,
         .json_output = 0,
-        .once = 0
+        .once = 0,
+        .show_cpu = 0,
+        .show_mem = 0,
+        .show_disk = 0
     };
 
     for (int i = 1; i < argc; i++) {
@@ -41,11 +47,56 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-1") == 0 || strcmp(argv[i], "--once") == 0) {
             config.once = 1;
             config.interactive = 0;
+        } else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--cpu") == 0) {
+            config.show_cpu = 1;
+            config.interactive = 0;
+        } else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--mem") == 0) {
+            config.show_mem = 1;
+            config.interactive = 0;
+        } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--disk") == 0) {
+            config.show_disk = 1;
+            config.interactive = 0;
         } else {
             fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
             print_usage(argv[0]);
             return EXIT_FAILURE;
         }
+    }
+
+    if (config.show_cpu) {
+        sys_cpu_metrics_t cpu;
+        sys_metrics_init();
+        sys_get_cpu_metrics(&cpu);
+        printf("CPU Cores: %d\n", cpu.core_count);
+        printf("CPU Overall Usage: %.2f%%\n", cpu.overall_usage_pct);
+        return EXIT_SUCCESS;
+    }
+
+    if (config.show_mem) {
+        sys_mem_metrics_t mem;
+        sys_metrics_init();
+        sys_get_mem_metrics(&mem);
+        printf("RAM Total: %.2f GB\n", (double)mem.total_bytes / (1024.0 * 1024.0 * 1024.0));
+        printf("RAM Used:  %.2f GB (%.2f%%)\n", (double)mem.used_bytes / (1024.0 * 1024.0 * 1024.0), mem.ram_usage_pct);
+        printf("RAM Free:  %.2f GB\n", (double)mem.free_bytes / (1024.0 * 1024.0 * 1024.0));
+        return EXIT_SUCCESS;
+    }
+
+    if (config.show_disk) {
+        sys_disk_metrics_t disk;
+        sys_metrics_init();
+        sys_get_disk_metrics(&disk);
+        printf("%-20s %-25s %-12s %-12s %-8s %-8s\n", "Mount Point", "Device", "Total", "Used", "Use %", "IOPS");
+        for (size_t i = 0; i < disk.count; i++) {
+            sys_disk_info_t *d = &disk.disks[i];
+            float use_pct = d->total_bytes > 0 ? ((float)d->used_bytes / (float)d->total_bytes) * 100.0f : 0.0f;
+            char total_str[32], used_str[32];
+            snprintf(total_str, sizeof(total_str), "%.1f GB", (double)d->total_bytes / (1024.0 * 1024.0 * 1024.0));
+            snprintf(used_str, sizeof(used_str), "%.1f GB", (double)d->used_bytes / (1024.0 * 1024.0 * 1024.0));
+            printf("%-20.20s %-25.25s %-12s %-12s %6.1f%% %8u\n",
+                   d->mount_point, d->device, total_str, used_str, use_pct, d->iops);
+        }
+        return EXIT_SUCCESS;
     }
 
     if (config.json_output) {
