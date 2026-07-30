@@ -8,6 +8,7 @@
 #include <ncurses.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 
 bool ui_init(void) {
     if (initscr() == NULL) {
@@ -190,7 +191,7 @@ void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, 
     }
 }
 
-bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, int max_proc_count) {
+bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current_proc_pid, int max_proc_count, char *status_buf, size_t status_buf_size) {
     int ch = getch();
     if (ch == 'q' || ch == 'Q') {
         return false;
@@ -209,6 +210,22 @@ bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, int max_proc_
         } else if (ch == KEY_UP || ch == 'k') {
             if (*selected_proc_idx > 0) {
                 (*selected_proc_idx)--;
+            }
+        } else if (ch == 'x' || ch == 'X' || ch == 'K') {
+            /* Send signal to highlighted process */
+            if (current_proc_pid > 0) {
+                int sig = (ch == 'X') ? SIGKILL : SIGTERM;
+                if (kill(current_proc_pid, sig) == 0) {
+                    if (status_buf && status_buf_size > 0) {
+                        snprintf(status_buf, status_buf_size, "Sent %s to PID %d successfully.",
+                                 sig == SIGKILL ? "SIGKILL" : "SIGTERM", current_proc_pid);
+                    }
+                } else {
+                    if (status_buf && status_buf_size > 0) {
+                        snprintf(status_buf, status_buf_size, "Failed to send signal to PID %d (Permission denied).",
+                                 current_proc_pid);
+                    }
+                }
             }
         }
     }

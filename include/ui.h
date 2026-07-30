@@ -7,6 +7,7 @@
 #define UI_H
 
 #include <stdbool.h>
+#include <sys/types.h>
 #include "sys_metrics.h"
 
 /**
@@ -87,9 +88,12 @@ void ui_draw_manual_view(int selected_idx, const char *status_msg, int start_y, 
  * @brief Main TUI event loop step.
  * @param active_tab Pointer to currently active tab variable.
  * @param selected_proc_idx Pointer to currently selected process index variable.
+ * @param current_proc_pid PID of the currently highlighted process.
  * @param max_proc_count Total number of processes available for navigation.
+ * @param status_buf Buffer to store status messages.
+ * @param status_buf_size Size of the status buffer.
  * @return false if exit command (e.g. 'q') was issued, true otherwise.
  */
-bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, int max_proc_count);
+bool ui_handle_input(ui_tab_t *active_tab, int *selected_proc_idx, pid_t current_proc_pid, int max_proc_count, char *status_buf, size_t status_buf_size);
 
 #endif /* UI_H */

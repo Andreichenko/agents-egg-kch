@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
         sys_metrics_init();
         ui_tab_t active_tab = UI_TAB_OVERVIEW;
         int selected_proc_idx = 0;
+        char status_msg[128] = "";
         sys_cpu_metrics_t cpu;
         sys_mem_metrics_t mem;
         sys_disk_metrics_t disk;
@@ -87,13 +88,21 @@ int main(int argc, char *argv[]) {
             erase();
             ui_draw_header(active_tab);
 
+            pid_t current_pid = 0;
+            if (proc.count > 0 && selected_proc_idx < (int)proc.count) {
+                current_pid = proc.procs[selected_proc_idx].pid;
+            }
+
             if (active_tab == UI_TAB_DISKS) {
                 ui_draw_disks_view(&disk, 2, 2);
             } else if (active_tab == UI_TAB_PROCESSES) {
                 ui_draw_processes_view(&proc, selected_proc_idx, 2, 2);
-                mvprintw(getmaxy(stdscr) - 1, 2, "Use UP/DOWN or j/k to navigate. Press 'q' to exit.");
+                if (status_msg[0] != '\0') {
+                    mvprintw(getmaxy(stdscr) - 2, 2, "Status: %s", status_msg);
+                }
+                mvprintw(getmaxy(stdscr) - 1, 2, "Use UP/DOWN/j/k to navigate. Press 'x' for SIGTERM, 'X' for SIGKILL, 'q' to exit.");
             } else if (active_tab == UI_TAB_MANUAL) {
-                ui_draw_manual_view(0, "Ready for manual commands", 2, 2);
+                ui_draw_manual_view(selected_proc_idx, status_msg[0] != '\0' ? status_msg : "Ready for manual commands", 2, 2);
                 mvprintw(getmaxy(stdscr) - 1, 2, "Press 'q' or 'Q' to exit.");
             } else {
                 ui_draw_system_summary(&cpu, &mem, 2, 2);
@@ -102,7 +111,7 @@ int main(int argc, char *argv[]) {
 
             refresh();
 
-            if (!ui_handle_input(&active_tab, &selected_proc_idx, (int)proc.count)) {
+            if (!ui_handle_input(&active_tab, &selected_proc_idx, current_pid, (int)proc.count, status_msg, sizeof(status_msg))) {
                 break;
             }
 
